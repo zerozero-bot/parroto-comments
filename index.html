@@ -13,16 +13,16 @@
   <button id="btnExcel" disabled>Tải file Excel</button>
   <p id="status"></p>
   <ul id="list"></ul>
-
+ 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const PROXY = "https://parroto-proxy.quangthanh1107304.workers.dev/";
-
+ 
 // Lưu TẤT CẢ comment (kể cả comment hệ thống) để xuất Excel,
 // không bị ảnh hưởng bởi checkbox "Chỉ comment do người dùng viết".
 let allComments = [];
 let currentId = "";
-
+ 
 function exportExcel() {
   const rows = allComments
     .filter(c => c.is_system && c.system_meta && c.system_meta.type === "shadowing")
@@ -31,21 +31,21 @@ function exportExcel() {
       "Time": new Date(c.created_at * 1000).toLocaleString("vi-VN"),
       "Completed Shadowing": c.system_meta.score
     }));
-
+ 
   if (rows.length === 0) {
     alert("Không có comment hệ thống (Completed Shadowing) nào để xuất.");
     return;
   }
-
+ 
   const ws = XLSX.utils.json_to_sheet(rows, { header: ["Name", "Time", "Completed Shadowing"] });
   ws["!cols"] = [{ wch: 25 }, { wch: 20 }, { wch: 50 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Comments");
   XLSX.writeFile(wb, "parroto-" + currentId + ".xlsx");
 }
-
+ 
 document.getElementById("btnExcel").onclick = exportExcel;
-
+ 
 async function start() {
   const link = document.getElementById("link").value;
   const status = document.getElementById("status");
@@ -54,13 +54,13 @@ async function start() {
   list.innerHTML = "";
   btnExcel.disabled = true;
   allComments = [];
-
+ 
   const match = link.match(/[0-9a-f]{24}/i);
   if (!match) { status.textContent = "Không tìm thấy ID bài học trong link."; return; }
   const id = match[0];
   currentId = id;
   const onlyUser = document.getElementById("onlyUser").checked;
-
+ 
   try {
     let page = 1, totalPages = 1, count = 0;
     while (page <= totalPages) {
@@ -69,7 +69,7 @@ async function start() {
       if (!res.ok) throw new Error("Lỗi " + res.status);
       const json = await res.json();
       totalPages = json.data.totalPages;
-
+ 
       for (const c of json.data.comments) {
         allComments.push(c);
         if (onlyUser && c.is_system) continue;
@@ -88,6 +88,15 @@ async function start() {
     status.textContent = "Có lỗi: " + e.message;
   }
 }
+ 
+// Tự động chạy khi địa chỉ có dạng ?id=<ID 24 ký tự> (dùng cho bookmarklet)
+(function autoStartFromUrl() {
+  const idFromUrl = new URLSearchParams(location.search).get("id");
+  if (idFromUrl && /^[0-9a-f]{24}$/i.test(idFromUrl)) {
+    document.getElementById("link").value = idFromUrl;
+    start();
+  }
+})();
 </script>
 </body>
 </html>

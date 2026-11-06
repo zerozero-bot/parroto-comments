@@ -8,7 +8,8 @@
 <body>
   <h1>Xem comment bài học</h1>
   <input id="link" size="60" placeholder="Dán link bài học vào đây">
-  <label><input type="checkbox" id="onlyUser" checked> Chỉ comment do người dùng viết</label>
+  <label><input type="checkbox" id="onlySystem" checked> Chỉ lấy bình luận từ hệ thống</label>
+  <label><input type="checkbox" id="onlyUser"> Chỉ lấy comment người dùng</label>
   <button onclick="start()">Lấy comment</button>
   <button id="btnExcel" disabled>Tải file Excel</button>
   <p id="status"></p>
@@ -46,6 +47,15 @@ function exportExcel() {
  
 document.getElementById("btnExcel").onclick = exportExcel;
  
+// Hai ô tick không được bật cùng lúc: bật ô này thì tắt ô kia.
+// Nếu tắt cả hai thì hiển thị tất cả comment.
+document.getElementById("onlySystem").onchange = function () {
+  if (this.checked) document.getElementById("onlyUser").checked = false;
+};
+document.getElementById("onlyUser").onchange = function () {
+  if (this.checked) document.getElementById("onlySystem").checked = false;
+};
+ 
 async function start() {
   const link = document.getElementById("link").value;
   const status = document.getElementById("status");
@@ -60,6 +70,7 @@ async function start() {
   const id = match[0];
   currentId = id;
   const onlyUser = document.getElementById("onlyUser").checked;
+  const onlySystem = document.getElementById("onlySystem").checked;
  
   try {
     let page = 1, totalPages = 1, count = 0;
@@ -73,6 +84,7 @@ async function start() {
       for (const c of json.data.comments) {
         allComments.push(c);
         if (onlyUser && c.is_system) continue;
+        if (onlySystem && !c.is_system) continue;
         const li = document.createElement("li");
         const date = new Date(c.created_at * 1000).toLocaleString("vi-VN");
         li.textContent = c.author.displayName + " (" + date + "): " + c.content;
